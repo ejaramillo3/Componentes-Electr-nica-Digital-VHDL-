@@ -1,0 +1,48 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+entity mult_2bits is
+    port (
+        a1, a0   : in  std_logic;
+        b1, b0   : in  std_logic;
+        producto : out std_logic_vector(3 downto 0)
+    );
+end entity mult_2bits;
+
+architecture estructural of mult_2bits is
+
+    signal a1b0, a0b1, a1b1 : std_logic;
+    signal acarreo_columna1  : std_logic;
+
+    component G_and2 is
+        port ( a, b : in std_logic; y : out std_logic );
+    end component;
+
+    component Halfadder is
+        port (
+            a       : in  std_logic;
+            b       : in  std_logic;
+            suma    : out std_logic;
+            acarreo : out std_logic
+        );
+    end component;
+
+begin
+
+    -- Primera fila de productos parciales
+    AND0: G_and2 port map (a => a0, b => b0, y => producto(0));
+    AND1: G_and2 port map (a => a1, b => b0, y => a1b0);
+
+    -- Segunda fila (desplazada)
+    AND2: G_and2 port map (a => a0, b => b1, y => a0b1);
+    AND3: G_and2 port map (a => a1, b => b1, y => a1b1);
+
+    -- Columna 1
+    COL1: Halfadder
+        port map (a => a1b0, b => a0b1, suma => producto(1), acarreo => acarreo_columna1);
+
+    -- Columna 2
+    COL2: Halfadder
+        port map (a => a1b1, b => acarreo_columna1, suma => producto(2), acarreo => producto(3));
+
+end architecture estructural;
