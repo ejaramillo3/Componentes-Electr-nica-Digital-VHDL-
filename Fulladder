@@ -1,0 +1,25 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+entity Fulladder is
+    port (
+        a    : in  std_logic;
+        b    : in  std_logic;
+        cin  : in  std_logic;
+        s    : out std_logic;   -- suma
+        cout : out std_logic    -- acarreo de salida
+    );
+end entity Fulladder;
+
+architecture estructural of Fulladder is
+    signal p, g, t : std_logic;
+begin
+    -- s    = a XOR b XOR cin
+    -- cout = (a AND b) OR (cin AND (a XOR b))
+    p <= a xor b;              
+    g <= a and b;              
+    t <= p and cin;
+
+    s    <= p xor cin;
+    cout <= g or t;
+end architecture estructural;
