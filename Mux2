@@ -1,0 +1,76 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+entity G_not is
+    port (
+        a : in  std_logic;
+        y : out std_logic
+    );
+end entity G_not;
+
+architecture rtl of G_not is
+begin
+    y <= not a;
+end architecture rtl;
+
+entity G_and2 is
+    port (
+        a : in  std_logic;
+        b : in  std_logic;
+        y : out std_logic
+    );
+end entity G_and2;
+
+architecture rtl of G_and2 is
+begin
+    y <= a and b;
+end architecture rtl;
+
+entity G_or2 is
+    port (
+        a : in  std_logic;
+        b : in  std_logic;
+        y : out std_logic
+    );
+end entity G_or2;
+
+architecture rtl of G_or2 is
+begin
+    y <= a or b;
+end architecture rtl;
+
+entity Mux2 is
+    port (
+        a  : in  std_logic;
+        b  : in  std_logic;
+        sc : in  std_logic;   -- selector
+        S  : out std_logic
+    );
+end entity Mux2;
+
+architecture estructural of Mux2 is
+
+    signal w0, w1, w2, wireS : std_logic;
+
+    component G_not is
+        port ( a : in std_logic; y : out std_logic );
+    end component;
+
+    component G_and2 is
+        port ( a, b : in std_logic; y : out std_logic );
+    end component;
+
+    component G_or2 is
+        port ( a, b : in std_logic; y : out std_logic );
+    end component;
+
+begin
+
+    A0: G_not  port map (a => sc, y => w0);
+    A1: G_and2 port map (a => a,  b => w0, y => w1);
+    A2: G_and2 port map (a => b,  b => sc, y => w2);
+    A3: G_or2  port map (a => w1, b => w2, y => wireS);
+
+    S <= wireS;
+
+end architecture estructural;
