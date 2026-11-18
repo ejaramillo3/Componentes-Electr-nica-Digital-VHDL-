@@ -1,0 +1,128 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+entity Multiplicador4 is
+    port (
+        a3, a2, a1, a0 : in  std_logic;
+        b3, b2, b1, b0 : in  std_logic;
+        producto       : out std_logic_vector(7 downto 0)
+    );
+end entity Multiplicador4;
+
+architecture estructural of Multiplicador4 is
+
+    -- Productos parciales (p_ij = a_i AND b_j)
+    signal p00, p01, p02, p03 : std_logic;
+    signal p10, p11, p12, p13 : std_logic;
+    signal p20, p21, p22, p23 : std_logic;
+    signal p30, p31, p32, p33 : std_logic;
+
+    -- Sumas intermedias de 4 bits
+    signal suma1, suma2, suma3 : std_logic_vector(3 downto 0);
+    
+    -- Acarreos
+    signal c1, c2, c3 : std_logic;
+    
+    -- Señales auxiliares para las entradas de los sumadores
+    signal s1_b0, s1_b1, s1_b2, s1_b3 : std_logic;
+    signal s2_b0, s2_b1, s2_b2, s2_b3 : std_logic;
+    signal s3_b0, s3_b1, s3_b2, s3_b3 : std_logic;
+
+    component G_and2 is
+        port ( a, b : in std_logic; y : out std_logic );
+    end component;
+
+    component Sumador4 is
+        port (
+            a3, a2, a1, a0 : in  std_logic;
+            b3, b2, b1, b0 : in  std_logic;
+            suma           : out std_logic_vector(3 downto 0);
+            carry_out      : out std_logic
+        );
+    end component;
+
+begin
+
+    -- 1. Generación de productos parciales (Filas)
+    -- Fila 0 (b0)
+    U_P00: G_and2 port map (a => a0, b => b0, y => p00);
+    U_P10: G_and2 port map (a => a1, b => b0, y => p10);
+    U_P20: G_and2 port map (a => a2, b => b0, y => p20);
+    U_P30: G_and2 port map (a => a3, b => b0, y => p30);
+
+    -- Fila 1 (b1)
+    U_P01: G_and2 port map (a => a0, b => b1, y => p01);
+    U_P11: G_and2 port map (a => a1, b => b1, y => p11);
+    U_P21: G_and2 port map (a => a2, b => b1, y => p21);
+    U_P31: G_and2 port map (a => a3, b => b1, y => p31);
+
+    -- Fila 2 (b2)
+    U_P02: G_and2 port map (a => a0, b => b2, y => p02);
+    U_P12: G_and2 port map (a => a1, b => b2, y => p12);
+    U_P22: G_and2 port map (a => a2, b => b2, y => p22);
+    U_P32: G_and2 port map (a => a3, b => b2, y => p32);
+
+    -- Fila 3 (b3)
+    U_P03: G_and2 port map (a => a0, b => b3, y => p03);
+    U_P13: G_and2 port map (a => a1, b => b3, y => p13);
+    U_P23: G_and2 port map (a => a2, b => b3, y => p23);
+    U_P33: G_and2 port map (a => a3, b => b3, y => p33);
+
+    -- 2. Conformación de los vectores para los sumadores
+    
+    -- Suma 1: Fila 1 desplazada 1 posición a la izquierda.
+    -- Entrada A: {p31, p21, p11, p01}
+    -- Entrada B: {p30, p20, p10, 0}  (Fila 0)
+    s1_b0 <= '0';
+    s1_b1 <= p10;
+    s1_b2 <= p20;
+    s1_b3 <= p30;
+
+    U_SUM1: Sumador4
+        port map (
+            a3 => p31, a2 => p21, a1 => p11, a0 => p01,
+            b3 => s1_b3, b2 => s1_b2, b1 => s1_b1, b0 => s1_b0,
+            suma => suma1, carry_out => c1
+        );
+
+    -- Suma 2: Fila 2 desplazada 2 posiciones.
+    -- Entrada A: {p32, p22, p12, 0}
+    -- Entrada B: {c1, suma1(3), suma1(2), suma1(1)} (Suma 1 + acarreo)
+    s2_b0 <= suma1(1);
+    s2_b1 <= suma1(2);
+    s2_b2 <= suma1(3);
+    s2_b3 <= c1;
+
+    U_SUM2: Sumador4
+        port map (
+            a3 => p32, a2 => p22, a1 => p12, a0 => '0',
+            b3 => s2_b3, b2 => s2_b2, b1 => s2_b1, b0 => s2_b0,
+            suma => suma2, carry_out => c2
+        );
+
+    -- Suma 3: Fila 3 desplazada 3 posiciones.
+    -- Entrada A: {p33, p23, 0, 0}
+    -- Entrada B: {c2, suma2(3), suma2(2), suma2(1)}
+    s3_b0 <= suma2(1);
+    s3_b1 <= suma2(2);
+    s3_b2 <= suma2(3);
+    s3_b3 <= c2;
+
+    U_SUM3: Sumador4
+        port map (
+            a3 => p33, a2 => p23, a1 => '0', a0 => '0',
+            b3 => s3_b3, b2 => s3_b2, b1 => s3_b1, b0 => s3_b0,
+            suma => suma3, carry_out => c3
+        );
+
+    -- 3. Asignación del producto final (8 bits)
+    producto(0) <= p00;
+    producto(1) <= suma1(0);
+    producto(2) <= suma2(0);
+    producto(3) <= suma3(0);
+    producto(4) <= suma3(1);
+    producto(5) <= suma3(2);
+    producto(6) <= suma3(3);
+    producto(7) <= c3;
+
+end architecture estructural;
