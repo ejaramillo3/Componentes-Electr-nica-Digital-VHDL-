@@ -1,0 +1,45 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+entity Sumador4 is
+    port (
+        a3, a2, a1, a0 : in  std_logic;
+        b3, b2, b1, b0 : in  std_logic;
+        suma           : out std_logic_vector(3 downto 0);
+        carry_out        : out std_logic
+    );
+end entity Sumador4;
+
+architecture estructural of Sumador4 is
+
+
+    signal c0, c1, c2, c3 : std_logic;
+
+    component Fulladder is
+        port (
+            a    : in  std_logic;
+            b    : in  std_logic;
+            cin  : in  std_logic;
+            s    : out std_logic;
+            cout : out std_logic
+        );
+    end component;
+
+begin
+
+    -- (bit menos significativo): acarreo de entrada = '0'
+    c0 <= '0';
+
+    FA0: Fulladder
+        port map (a => a0, b => b0, cin => c0, s => suma(0), cout => c1);
+
+    FA1: Fulladder
+        port map (a => a1, b => b1, cin => c1, s => suma(1), cout => c2);
+
+    FA2: Fulladder
+        port map (a => a2, b => b2, cin => c2, s => suma(2), cout => c3);
+
+    FA3: Fulladder
+        port map (a => a3, b => b3, cin => c3, s => suma(3), cout => carry_out );
+
+end architecture estructural;
