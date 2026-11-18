@@ -1,0 +1,32 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+entity Mux2_4b is
+    port (
+        a  : in  std_logic_vector(3 downto 0);
+        b  : in  std_logic_vector(3 downto 0);
+        sc : in  std_logic;
+        S  : out std_logic_vector(3 downto 0)
+    );
+end entity Mux2_4b;
+
+architecture estructural of Mux2_4b is
+
+    -- Mux2 de 1 bit (el que ya tienes, con compuertas)
+    component Mux2 is
+        port (
+            a  : in  std_logic;
+            b  : in  std_logic;
+            sc : in  std_logic;
+            S  : out std_logic
+        );
+    end component;
+
+begin
+
+    M0: Mux2 port map (a => a(0), b => b(0), sc => sc, S => S(0));
+    M1: Mux2 port map (a => a(1), b => b(1), sc => sc, S => S(1));
+    M2: Mux2 port map (a => a(2), b => b(2), sc => sc, S => S(2));
+    M3: Mux2 port map (a => a(3), b => b(3), sc => sc, S => S(3));
+
+end architecture estructural;
