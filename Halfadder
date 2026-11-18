@@ -1,0 +1,17 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+entity Halfadder is
+    port (
+        a       : in  std_logic;
+        b       : in  std_logic;
+        suma    : out std_logic;
+        acarreo : out std_logic
+    );
+end entity Halfadder;
+
+architecture rtl of Halfadder is
+begin
+    suma    <= a xor b;
+    acarreo <= a and b;
+end architecture rtl;
