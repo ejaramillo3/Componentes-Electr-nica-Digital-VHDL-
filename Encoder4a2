@@ -1,0 +1,54 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+entity Encoder4a2 is
+    port (
+        entrada3, entrada2, entrada1, entrada0 : in  std_logic;
+        codigo  : out std_logic_vector(1 downto 0);
+        valido  : out std_logic
+    );
+end entity Encoder4a2;
+
+architecture estructural of Encoder4a2 is
+
+    -- Señales internas (nombres SIN chocar con los labels)
+    signal n3_s, n2_s, n1_s : std_logic;
+    signal t2_and_n3_s      : std_logic;
+    signal t0_term1_s       : std_logic;
+    signal t0_term2_s       : std_logic;
+    signal v01_s, v012_s    : std_logic;
+
+    component G_not is
+        port ( a : in std_logic; y : out std_logic );
+    end component;
+
+    component G_and2 is
+        port ( a, b : in std_logic; y : out std_logic );
+    end component;
+
+    component G_or2 is
+        port ( a, b : in std_logic; y : out std_logic );
+    end component;
+
+begin
+
+    -- Negaciones (labels con prefijo U_ para no chocar con señales)
+    U_NOT3: G_not port map (a => entrada3, y => n3_s);
+    U_NOT2: G_not port map (a => entrada2, y => n2_s);
+    U_NOT1: G_not port map (a => entrada1, y => n1_s);
+
+    -- codigo(1) = entrada3 OR (entrada2 AND NOT entrada3)
+    U_T2: G_and2 port map (a => entrada2, b => n3_s, y => t2_and_n3_s);
+    U_C1: G_or2  port map (a => entrada3, b => t2_and_n3_s, y => codigo(1));
+
+    -- codigo(0) = entrada3 OR (NOT entrada2 AND NOT entrada3 AND entrada1)
+    U_T0A: G_and2 port map (a => n2_s, b => n3_s, y => t0_term1_s);
+    U_T0B: G_and2 port map (a => t0_term1_s, b => entrada1, y => t0_term2_s);
+    U_C0:  G_or2  port map (a => entrada3, b => t0_term2_s, y => codigo(0));
+
+    -- valido = entrada3 OR entrada2 OR entrada1 OR entrada0
+    U_V01:  G_or2 port map (a => entrada3, b => entrada2, y => v01_s);
+    U_V012: G_or2 port map (a => v01_s, b => entrada1, y => v012_s);
+    U_V:    G_or2 port map (a => v012_s, b => entrada0, y => valido);
+
+end architecture estructural;
