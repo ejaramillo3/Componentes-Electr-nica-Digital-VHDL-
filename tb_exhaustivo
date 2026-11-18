@@ -1,0 +1,215 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.NUMERIC_STD.ALL;
+
+entity tb_exhaustivo is
+end entity tb_exhaustivo;
+
+architecture sim of tb_exhaustivo is
+
+    -- Señales de entrada
+    signal a, b, entrada : std_logic_vector(3 downto 0) := (others => '0');
+    signal codigo_decoder : std_logic_vector(1 downto 0) := "00";
+    signal sel : std_logic := '0';
+
+    -- Señales de salida de los módulos
+    signal salida_decoder : std_logic_vector(3 downto 0);
+    signal codigo_encoder : std_logic_vector(1 downto 0);
+    signal valido         : std_logic;
+    
+    -- Salidas del Mux2 de 1 bit (instanciado 4 veces)
+    signal salida_mux0, salida_mux1, salida_mux2, salida_mux3 : std_logic;
+    
+    signal suma, diferencia, producto_2bits : std_logic_vector(3 downto 0);
+    signal acarreo, prestamo, suma_media, acarreo_medio : std_logic;
+    signal producto_4bits : std_logic_vector(7 downto 0);
+
+begin
+
+    -- =========================================================
+    -- Instanciación de los Componentes (DUTs)
+    -- =========================================================
+    
+    -- 1. Decodificador 2 a 4
+    DEC: entity work.Decoder2a4
+        port map (
+            codigo1 => codigo_decoder(1),
+            codigo0 => codigo_decoder(0),
+            salida  => salida_decoder
+        );
+
+    -- 2. Codificador 4 a 2
+    ENC: entity work.Encoder4a2
+        port map (
+            entrada3 => entrada(3), entrada2 => entrada(2),
+            entrada1 => entrada(1), entrada0 => entrada(0),
+            codigo   => codigo_encoder,
+            valido   => valido
+        );
+
+    -- 3. Mux2 (1 bit) instanciado 4 veces (para formar un mux de 4 bits)
+    MUX0: entity work.Mux2
+        port map (a => a(0), b => b(0), sc => sel, S => salida_mux0);
+        
+    MUX1: entity work.Mux2
+        port map (a => a(1), b => b(1), sc => sel, S => salida_mux1);
+        
+    MUX2: entity work.Mux2
+        port map (a => a(2), b => b(2), sc => sel, S => salida_mux2);
+        
+    MUX3: entity work.Mux2
+        port map (a => a(3), b => b(3), sc => sel, S => salida_mux3);
+
+    -- 4. Sumador de 4 bits
+    SUM: entity work.Sumador4
+        port map (
+            a3 => a(3), a2 => a(2), a1 => a(1), a0 => a(0),
+            b3 => b(3), b2 => b(2), b1 => b(1), b0 => b(0),
+            suma => suma, carry_out => acarreo
+        );
+
+    -- 5. Restador de 4 bits
+    RES: entity work.Restador4
+        port map (
+            a3 => a(3), a2 => a(2), a1 => a(1), a0 => a(0),
+            b3 => b(3), b2 => b(2), b1 => b(1), b0 => b(0),
+            diferencia => diferencia, prestamo => prestamo
+        );
+
+    -- 6. Multiplicador de 2 bits (Papel)
+    MULT2: entity work.Mult2
+        port map (
+            a1 => a(1), a0 => a(0),
+            b1 => b(1), b0 => b(0),
+            producto => producto_2bits
+        );
+
+    -- 7. Medio Sumador (Aislado)
+    HA: entity work.Halfadder
+        port map (
+            a => a(0), b => b(0),
+            suma => suma_media, acarreo => acarreo_medio
+        );
+
+    -- 8. Multiplicador de 4 bits
+    MULT4: entity work.Multiplicador4
+        port map (
+            a3 => a(3), a2 => a(2), a1 => a(1), a0 => a(0),
+            b3 => b(3), b2 => b(2), b1 => b(1), b0 => b(0),
+            producto => producto_4bits
+        );
+
+    -- =========================================================
+    -- Proceso de Pruebas
+    -- =========================================================
+    stim_proc: process
+        variable v_entrada : std_logic_vector(3 downto 0);
+        variable v_codigo_dec : std_logic_vector(1 downto 0);
+        variable v_salida_esperada : std_logic_vector(3 downto 0);
+        variable v_codigo_esp : std_logic_vector(1 downto 0);
+        variable v_valido_esp : std_logic;
+        variable v_res_int : integer;
+        variable v_casos : integer := 0;
+    begin
+        report "Iniciando prueba exhaustiva...";
+
+        -- 1. PRUEBA DEL DECODIFICADOR (4 casos)
+        for i in 0 to 3 loop
+            v_codigo_dec := std_logic_vector(to_unsigned(i, 2));
+            codigo_decoder <= v_codigo_dec;
+            wait for 1 ns;
+            
+            v_salida_esperada := (others => '0');
+            v_salida_esperada(i) := '1';
+            
+            assert salida_decoder = v_salida_esperada
+                report "ERROR Decoder: codigo=" & integer'image(i) severity failure;
+            v_casos := v_casos + 1;
+        end loop;
+
+        -- 2. PRUEBA DEL CODIFICADOR (16 casos)
+        for i in 0 to 15 loop
+            v_entrada := std_logic_vector(to_unsigned(i, 4));
+            entrada <= v_entrada;
+            wait for 1 ns;
+            
+            if    v_entrada(3) = '1' then v_codigo_esp := "11"; v_valido_esp := '1';
+            elsif v_entrada(2) = '1' then v_codigo_esp := "10"; v_valido_esp := '1';
+            elsif v_entrada(1) = '1' then v_codigo_esp := "01"; v_valido_esp := '1';
+            elsif v_entrada(0) = '1' then v_codigo_esp := "00"; v_valido_esp := '1';
+            else                         v_codigo_esp := "00"; v_valido_esp := '0';
+            end if;
+
+            assert codigo_encoder = v_codigo_esp and valido = v_valido_esp
+                report "ERROR Encoder: entrada=" & integer'image(i) severity failure;
+            v_casos := v_casos + 1;
+        end loop;
+
+        -- 3. PRUEBAS CRUZADAS (16x16 = 256 casos por módulo)
+        for i in 0 to 15 loop
+            for j in 0 to 15 loop
+                a <= std_logic_vector(to_unsigned(i, 4));
+                b <= std_logic_vector(to_unsigned(j, 4));
+                wait for 1 ns;
+
+                -- Sumador
+                v_res_int := i + j;
+                assert (acarreo & suma) = std_logic_vector(to_unsigned(v_res_int, 5))
+                    report "ERROR Sumador: " & integer'image(i) & "+" & integer'image(j) severity failure;
+
+                -- Restador
+                v_res_int := i - j;
+                if i < j then
+                    assert prestamo = '1' and to_integer(unsigned(diferencia)) = (16 + v_res_int)
+                        report "ERROR Restador (negativo)" severity failure;
+                else
+                    assert prestamo = '0' and to_integer(unsigned(diferencia)) = v_res_int
+                        report "ERROR Restador (positivo)" severity failure;
+                end if;
+
+                -- Mux (Comprobando los 4 bits)
+                sel <= '0'; wait for 1 ns;
+                assert (salida_mux3 = a(3)) and (salida_mux2 = a(2)) and 
+                       (salida_mux1 = a(1)) and (salida_mux0 = a(0))
+                    report "ERROR Mux sel=0" severity failure;
+                    
+                sel <= '1'; wait for 1 ns;
+                assert (salida_mux3 = b(3)) and (salida_mux2 = b(2)) and 
+                       (salida_mux1 = b(1)) and (salida_mux0 = b(0))
+                    report "ERROR Mux sel=1" severity failure;
+
+                -- Multiplicador 4 bits
+                v_res_int := i * j;
+                assert to_integer(unsigned(producto_4bits)) = v_res_int
+                    report "ERROR Mult4: " & integer'image(i) & "*" & integer'image(j) severity failure;
+
+                v_casos := v_casos + 5;
+            end loop;
+        end loop;
+
+        -- 4. PRUEBA MULTIPLICADOR 2 BITS (4x4 = 16 casos)
+        for i in 0 to 3 loop
+            for j in 0 to 3 loop
+                a(1 downto 0) <= std_logic_vector(to_unsigned(i, 2));
+                b(1 downto 0) <= std_logic_vector(to_unsigned(j, 2));
+                wait for 1 ns;
+                
+                v_res_int := i * j;
+                assert to_integer(unsigned(producto_2bits)) = v_res_int
+                    report "ERROR Mult2: " & integer'image(i) & "*" & integer'image(j) severity failure;
+
+                if i < 2 and j < 2 then
+                    v_res_int := i + j;
+                    assert (acarreo_medio & suma_media) = std_logic_vector(to_unsigned(v_res_int, 2))
+                        report "ERROR Halfadder" severity failure;
+                    v_casos := v_casos + 1;
+                end if;
+                v_casos := v_casos + 1;
+            end loop;
+        end loop;
+
+        report "OK: " & integer'image(v_casos) & " casos aprobados. Simulacion terminada.";
+        wait;
+    end process;
+
+end architecture sim;
