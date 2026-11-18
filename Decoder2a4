@@ -1,0 +1,61 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+-- ============================================================
+entity G_not is
+    port ( a : in std_logic; y : out std_logic );
+end entity G_not;
+architecture rtl of G_not is
+begin
+    y <= not a;
+end architecture rtl;
+
+-- ============================================================
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+entity G_and2 is
+    port ( a, b : in std_logic; y : out std_logic );
+end entity G_and2;
+architecture rtl of G_and2 is
+begin
+    y <= a and b;
+end architecture rtl;
+
+-- ============================================================
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+entity Decoder2a4 is
+    port (
+        codigo1, codigo0 : in  std_logic;
+        salida           : out std_logic_vector(3 downto 0)
+    );
+end entity Decoder2a4;
+
+architecture estructural of Decoder2a4 is
+
+    -- Señales internas (nombres con sufijo _s para no chocar con labels)
+    signal n1_s, n0_s : std_logic;
+
+    component G_not is
+        port ( a : in std_logic; y : out std_logic );
+    end component;
+
+    component G_and2 is
+        port ( a, b : in std_logic; y : out std_logic );
+    end component;
+
+begin
+
+    -- Negaciones del código
+    U_NOT1: G_not port map (a => codigo1, y => n1_s);
+    U_NOT0: G_not port map (a => codigo0, y => n0_s);
+
+    -- Decodificación (activación de una sola salida)
+    U_AND0: G_and2 port map (a => n1_s, b => n0_s, y => salida(0));
+    U_AND1: G_and2 port map (a => n1_s, b => codigo0, y => salida(1));
+    U_AND2: G_and2 port map (a => codigo1, b => n0_s, y => salida(2));
+    U_AND3: G_and2 port map (a => codigo1, b => codigo0, y => salida(3));
+
+end architecture estructural;
