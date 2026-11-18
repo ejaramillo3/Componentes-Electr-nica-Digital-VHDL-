@@ -1,0 +1,23 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+entity Fullsubstractor is
+    port (
+        a    : in  std_logic;
+        b    : in  std_logic;
+        bin  : in  std_logic;   -- préstamo de entrada (borrow in)
+        d    : out std_logic;   -- diferencia
+        bout : out std_logic    -- préstamo de salida (borrow out)
+    );
+end entity Fullsubstractor;
+
+architecture estructural of Fullsubstractor is
+    signal p, g, t : std_logic;
+begin
+    p <= a xor b;
+    g <= (not a) and b;
+    t <= (not p) and bin;
+
+    d    <= p xor bin;
+    bout <= g or t;
+end architecture estructural;
