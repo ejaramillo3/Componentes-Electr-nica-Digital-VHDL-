@@ -1,0 +1,34 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+entity Demux2 is
+    port (
+        D  : in  std_logic;   -- entrada de datos
+        sc : in  std_logic;   -- selector
+        Y0 : out std_logic;   -- salida 0 (cuando sc = '0')
+        Y1 : out std_logic    -- salida 1 (cuando sc = '1')
+    );
+end entity Demux2;
+
+architecture estructural of Demux2 is
+
+    signal w0, wireY0, wireY1 : std_logic;
+
+    component G_not is
+        port ( a : in std_logic; y : out std_logic );
+    end component;
+
+    component G_and2 is
+        port ( a, b : in std_logic; y : out std_logic );
+    end component;
+
+begin
+
+    A0: G_not  port map (a => sc, y => w0);
+    A1: G_and2 port map (a => D,  b => w0, y => wireY0);
+    A2: G_and2 port map (a => D,  b => sc, y => wireY1);
+
+    Y0 <= wireY0;
+    Y1 <= wireY1;
+
+end architecture estructural;
