@@ -1,0 +1,52 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+entity Demux4 is
+    port (
+        D  : in  std_logic;
+        sc : in  std_logic_vector(1 downto 0);
+        Y0 : out std_logic;
+        Y1 : out std_logic;
+        Y2 : out std_logic;
+        Y3 : out std_logic
+    );
+end entity Demux4;
+
+architecture estructural of Demux4 is
+
+    signal n_sc0, n_sc1 : std_logic;
+    signal sel0, sel1, sel2, sel3 : std_logic;
+    signal wireY0, wireY1, wireY2, wireY3 : std_logic;
+
+    component G_not is
+        port ( a : in std_logic; y : out std_logic );
+    end component;
+
+    component G_and2 is
+        port ( a, b : in std_logic; y : out std_logic );
+    end component;
+
+begin
+
+    -- Inversores para los 2 bits del selector
+    N0: G_not port map (a => sc(0), y => n_sc0);
+    N1: G_not port map (a => sc(1), y => n_sc1);
+
+    -- Decodificación del selector (minterms de sc1 y sc0)
+    S0: G_and2 port map (a => n_sc1, b => n_sc0, y => sel0); -- 00
+    S1: G_and2 port map (a => n_sc1, b => sc(0), y => sel1); -- 01
+    S2: G_and2 port map (a => sc(1), b => n_sc0, y => sel2); -- 10
+    S3: G_and2 port map (a => sc(1), b => sc(0), y => sel3); -- 11
+
+    -- Habilitación de la salida correspondiente con el dato D
+    A0: G_and2 port map (a => D, b => sel0, y => wireY0);
+    A1: G_and2 port map (a => D, b => sel1, y => wireY1);
+    A2: G_and2 port map (a => D, b => sel2, y => wireY2);
+    A3: G_and2 port map (a => D, b => sel3, y => wireY3);
+
+    Y0 <= wireY0;
+    Y1 <= wireY1;
+    Y2 <= wireY2;
+    Y3 <= wireY3;
+
+end architecture estructural;
